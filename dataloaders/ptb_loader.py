@@ -63,7 +63,7 @@ def ptb_batcher(raw_data, seq_len=35):
     
 def ptb_loader(x_batches, y_batchers, batch_size=20, shuffle=False):
     dataset = TensorDataset(x_batches, y_batchers)
-    loader = DataLoader(dataset, batch_size, shuffle)
+    loader = DataLoader(dataset, batch_size, shuffle,drop_last=True)
     return loader
     
 

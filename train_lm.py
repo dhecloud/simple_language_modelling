@@ -2,7 +2,7 @@ import torch
 import config as CONFIG
 CUDA_AVAIL = torch.cuda.is_available()
 
-import sys, argparse
+import sys, argparse, os
 import numpy as np
 from tqdm import tqdm
 
@@ -42,10 +42,31 @@ def create_ptb_loader(data_dir, batch_size, seq_len):
     valid_loader = ptb_loader(valid_x , valid_y, batch_size)
     return train_loader, test_loader, valid_loader, vocabulary_size
 
+def save_checkpoint(state, folder='unnamed', is_best=False, filename='checkpoint.pth.tar'):
+    mkdirs(os.path.join('experiments', folder))
+    if is_best:
+        save_path = os.path.join('experiments', folder, 'model_best.pth.tar')
+        print('saving best performing checkpoint..')
+        torch.save(state, save_path)
+    else:
+        save_path = os.path.join('experiments', folder, filename)
+        torch.save(state, save_path)
 
+def mkdirs(paths):
+    if isinstance(paths, list) and not isinstance(paths, str):
+        for path in paths:
+            mkdir(path)
+    else:
+        mkdir(paths)
+
+
+def mkdir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+            
 def main():
     
-    
+    mkdirs(os.path.join('experiments', args.model_size))
     train_loader, test_loader, valid_loader, vocabulary_size = create_ptb_loader(args.data_dir, args.batch_size, args.seq_len)
     # Instantiate and init the model, and move it to the GPU
     model= RnnLM(vocabulary_size, model_config)
@@ -60,18 +81,26 @@ def main():
     
     lr = model_config.learning_rate
     best_val_loss=np.inf
-    for e in tqdm(range(args.num_epochs),desc='Epoch'):
+    for e in tqdm(range(model_config.max_max_epoch),desc='Epoch'):
 
         model=train(train_loader,model,criterion,optimizer)
         val_loss=eval(valid_loader,model,criterion)
+        
+        state = {
+                'arch': "RnnLM",
+                'state_dict': model.state_dict(),
+                'optimizer' : optimizer.state_dict(),
+            }
         if val_loss<best_val_loss:
             best_val_loss=val_loss
+            save_checkpoint(state, folder=args.model_size, is_best=True)
         else:
             lr/= config.lr_decay
             optimizer=torch.optim.SGD(model.parameters(),lr=lr)
+            save_checkpoint(state, folder=args.model_size)
 
         # Test
-        test_loss=eval(data_test,model,criterion)
+        test_loss= eval(test_loader,model,criterion)
 
         # Report
         msg='Epoch %d: \tValid loss=%.4f \tTest loss=%.4f \tTest perplexity=%.1f'%(e+1,val_loss,test_loss,np.exp(test_loss))
@@ -90,7 +119,6 @@ def train(dataloader,model,criterion,optimizer):
     if CUDA_AVAIL: states = states.cuda()
     # Loop sequence length (train)
     for i, batch in enumerate(dataloader):
-        
         x, y = batch
         if CUDA_AVAIL:
             x = x.cuda()
@@ -100,7 +128,7 @@ def train(dataloader,model,criterion,optimizer):
         # Forward pass
         logits,states=model.forward(x.long(),states)
         loss=criterion(logits,y.long().view(-1))
-
+        
         # Backward pass
         optimizer.zero_grad()
         loss.backward()

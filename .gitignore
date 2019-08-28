@@ -3,6 +3,7 @@
 train.o*
 *.pptx
 data/
+experiments/
 *.json
 
 ## Ignore Visual Studio temporary files, build results, and
