@@ -40,7 +40,7 @@ class LargeConfig(object):
   num_steps = 35
   hidden_size = 1500
   max_epoch = 14
-  max_max_epoch = 55
+  max_max_epoch = 14
   keep_prob = 0.35
   lr_decay = 1 / 1.15
   batch_size = 20

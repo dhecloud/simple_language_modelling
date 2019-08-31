@@ -27,12 +27,16 @@ class RnnLM(torch.nn.Module):
         
         y = self.embed(x)
         y = self.dropout(y)
+        #y: (batch_size, seq_len, embedding_size)
         y , h = self.lstm(y,h)
+        #y: (batch_size, seq_len, hidden_size)
+        #h: (num_layers, batch_size, hidden_size), (num_layers, batch_size, hidden_size)
         y = self.dropout(y)
         y = y.contiguous().view(-1,self.hidden_size)
+        #y: (medium-700, hidden_size)
         y = self.fc(y)
-        
-        return y,h
+        #y: (medium-700, vocab_size)
+        return y, h
 
     def get_initial_states(self,batch_size):
         # Set initial hidden and memory states to 0

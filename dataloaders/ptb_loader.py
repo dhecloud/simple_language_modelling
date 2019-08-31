@@ -15,7 +15,8 @@ def _build_vocab(filename):
 
   words, _ = list(zip(*count_pairs))
   word_to_id = dict(zip(words, range(len(words))))
-  return word_to_id
+  id_to_word = dict((v,k) for k,v in word_to_id.items())
+  return word_to_id, id_to_word
   
 def _file_to_word_ids(filename, word_to_id):
     data = _read_words(filename)
@@ -28,7 +29,7 @@ def ptb_raw_data(data_path=None):
     valid_path = os.path.join(data_path, "ptb.valid.txt")
     test_path = os.path.join(data_path, "ptb.test.txt")
 
-    word_to_id = _build_vocab(train_path)
+    word_to_id, _ = _build_vocab(train_path)
     train_data = _file_to_word_ids(train_path, word_to_id)
     valid_data = _file_to_word_ids(valid_path, word_to_id)
     test_data = _file_to_word_ids(test_path, word_to_id)
@@ -61,9 +62,9 @@ def ptb_batcher(raw_data, seq_len=35):
         y[i] = raw_data[(i * seq_len)+1: (i + 1) * seq_len +1]
     return x, y
     
-def ptb_loader(x_batches, y_batchers, batch_size=20, shuffle=False):
+def ptb_loader(x_batches, y_batchers, batch_size=20, shuffle=True):
     dataset = TensorDataset(x_batches, y_batchers)
-    loader = DataLoader(dataset, batch_size, shuffle,drop_last=True)
+    loader = DataLoader(dataset, batch_size, shuffle=shuffle,drop_last=True)
     return loader
     
 
