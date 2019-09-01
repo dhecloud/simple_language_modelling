@@ -132,7 +132,7 @@ def train(dataloader,model,criterion,optimizer):
         states=model.detach(states)     # Otherwise the model would try to backprop all the way to the start of the data set
         # Forward pass
         logits,states=model.forward(x.long(),states)
-        loss=criterion(logits,y.long().view(-1))
+        loss=criterion(logits ,y.long().view(-1))
         
         # Backward pass
         optimizer.zero_grad()

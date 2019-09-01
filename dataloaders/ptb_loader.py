@@ -3,6 +3,16 @@ import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset
 
+
+def generate_binary_mask(input, deterministic=False):
+    mask=torch.rand(input.shape)
+    if deterministic:
+        pass
+    else:
+        mask[mask>0.5]=1
+        mask[mask<=0.5]=0
+    return mask
+    
 def _read_words(filename):
     with open(filename,'r',encoding='utf-8') as f:
         return f.read().replace("\n", "<eos>").split()
@@ -38,7 +48,7 @@ def ptb_raw_data(data_path=None):
     return train_data, valid_data, test_data, vocabulary
 
 
-def ptb_batcher(raw_data, seq_len=35):
+def ptb_batcher(raw_data, seq_len=35, mask=False):
     '''
     Args:
     raw_data: one of the raw data outputs from ptb_raw_data.
@@ -57,9 +67,16 @@ def ptb_batcher(raw_data, seq_len=35):
 
     x = torch.zeros([num_batch, seq_len])
     y = torch.zeros([num_batch, seq_len])
-    for i in range(num_batch):
-        x[i] = raw_data[i * seq_len:(i + 1) * seq_len]
-        y[i] = raw_data[(i * seq_len)+1: (i + 1) * seq_len +1]
+    if not mask:
+        for i in range(num_batch):
+            x[i] = raw_data[i * seq_len:(i + 1) * seq_len]
+            y[i] = raw_data[(i * seq_len)+1: (i + 1) * seq_len +1]
+    else:
+        for i in range(num_batch):
+            y[i] = raw_data[i * seq_len:(i + 1) * seq_len]
+            mask = generate_binary_mask(y[i])
+            x[i] = torch.mul(y[i], mask)
+
     return x, y
     
 def ptb_loader(x_batches, y_batchers, batch_size=20, shuffle=True):
